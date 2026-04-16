@@ -21,7 +21,7 @@ async def list_documents(session: AsyncSession = Depends(get_db_session)) -> lis
 @router.post("/upload", response_model=DocumentResponse)
 @limiter.limit("10/minute")
 async def upload_document(
-    http_request: Request,
+    request: Request,
     file: UploadFile = File(...),
     title: str | None = Form(default=None),
     metadata_json: str | None = Form(default=None),
@@ -40,13 +40,13 @@ async def upload_document(
 @router.post("/from-url", response_model=DocumentResponse)
 @limiter.limit("10/minute")
 async def ingest_url(
-    http_request: Request,
-    request: UrlIngestionRequest,
+    request: Request,
+    body: UrlIngestionRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> DocumentResponse:
     try:
         service = IngestionService(session)
-        return await service.ingest_url(request)
+        return await service.ingest_url(body)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

@@ -24,8 +24,8 @@ limiter = Limiter(key_func=get_remote_address)
 @router.post("", response_model=ConsultationResponse)
 @limiter.limit("20/minute")
 async def consult(
-    http_request: Request,
-    request: ConsultationRequest,
+    request: Request,
+    body: ConsultationRequest,
     _: AsyncSession = Depends(get_db_session),
 ) -> ConsultationResponse:
     try:
@@ -33,7 +33,7 @@ async def consult(
         retriever = HybridRetriever()
         workflow_engine = IntentWorkflowEngine(retriever)
         evaluator = AnswerEvaluator()
-        classification = await classifier.classify(request.query)
+        classification = await classifier.classify(body.query)
         attempts = 0
         refinement_prompt = None
         workflow_result = None
@@ -42,14 +42,14 @@ async def consult(
             attempts += 1
             workflow_result = await workflow_engine.run(
                 intent=classification.intent,
-                query=request.query,
-                top_k=request.top_k or 6,
-                document_ids=request.document_ids,
-                history=[message.model_dump() for message in request.history],
+                query=body.query,
+                top_k=body.top_k or 6,
+                document_ids=body.document_ids,
+                history=[message.model_dump() for message in body.history],
                 refinement_prompt=refinement_prompt,
             )
             evaluation_result = await evaluator.evaluate(
-                query=request.query,
+                query=body.query,
                 answer=workflow_result.answer,
                 retrievals=workflow_result.retrievals,
             )

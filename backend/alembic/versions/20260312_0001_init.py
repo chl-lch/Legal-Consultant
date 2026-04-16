@@ -19,10 +19,12 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    document_status = postgresql.ENUM("processing", "ready", "failed", name="document_status")
-    source_type = postgresql.ENUM("upload", "url", name="source_type")
-    document_status.create(op.get_bind(), checkfirst=True)
-    source_type.create(op.get_bind(), checkfirst=True)
+    # create_type=False: we create manually with checkfirst=True first,
+    # then tell SQLAlchemy not to recreate them when building the table DDL.
+    document_status = postgresql.ENUM("processing", "ready", "failed", name="document_status", create_type=False)
+    source_type = postgresql.ENUM("upload", "url", name="source_type", create_type=False)
+    postgresql.ENUM("processing", "ready", "failed", name="document_status").create(op.get_bind(), checkfirst=True)
+    postgresql.ENUM("upload", "url", name="source_type").create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "documents",
