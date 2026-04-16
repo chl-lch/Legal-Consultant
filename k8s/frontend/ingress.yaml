@@ -1,0 +1,108 @@
+# Ingress：集群的统一 HTTP 入口，负责把外部请求路由到内部 Service
+#
+# 概念：
+#   Ingress 本身只是一个规则声明（yaml）
+#   实际执行路由的是 Ingress Controller（需要单独安装）
+#
+#   最常用的 Ingress Controller：
+#     ingress-nginx（官方，用于大多数场景）
+#     Traefik（功能更丰富）
+#     AWS ALB Ingress Controller（在 AWS EKS 上用）
+#
+#   安装 ingress-nginx（本地 minikube）：
+#     minikube addons enable ingress
+#
+#   安装 ingress-nginx（云上 k8s）：
+#     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/cloud/deploy.yaml
+#
+# 路由规则：
+#   /api/  → backend:8000   （FastAPI）
+#   /      → frontend:80    （React + nginx）
+#   注意：/api/ 规则要写在 / 前面，否则所有请求都会匹配 /
+#
+# HTTPS 配置（推荐：cert-manager 自动申请 Let's Encrypt 证书）：
+#   1. 安装 cert-manager:
+#      kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.0/cert-manager.yaml
+#
+#   2. 创建 ClusterIssuer（见下方注释）
+#
+#   3. 取消注释 tls 和 cert-manager.io/cluster-issuer 注解
+#
+# 使用前必须替换：
+#   YOUR_DOMAIN.com → 你的真实域名（需要已将 DNS A 记录指向集群的公网 IP）
+#
+# 部署命令：kubectl apply -f k8s/frontend/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lexicounsel-ingress
+  namespace: lexicounsel
+  annotations:
+    # 使用 ingress-nginx 作为 Ingress Controller
+    kubernetes.io/ingress.class: "nginx"
+
+    # 允许上传最大 55MB 文件（略大于 backend 的 50MB 限制）
+    nginx.ingress.kubernetes.io/proxy-body-size: "55m"
+
+    # AI 接口响应慢，设置足够长的超时（秒）
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+
+    # 启用 gzip 压缩
+    nginx.ingress.kubernetes.io/enable-gzip: "true"
+
+    # HTTPS 重定向（取消注释后，访问 http:// 会自动跳转到 https://）
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+    # cert-manager 自动申请/续期 TLS 证书（需先安装 cert-manager）
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+spec:
+  ingressClassName: nginx
+
+  # TLS 配置（取消注释并替换域名，需要先配置 cert-manager）
+  # tls:
+  #   - hosts:
+  #       - YOUR_DOMAIN.com
+  #     secretName: lexicounsel-tls   # cert-manager 会自动填充这个 Secret
+
+  rules:
+    - host: YOUR_DOMAIN.com   # ← 替换为你的真实域名
+      http:
+        paths:
+          # /api/ 请求直接转发到 backend（FastAPI）
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+
+          # 其他所有请求转发到 frontend（React SPA）
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+---
+# ClusterIssuer：告诉 cert-manager 如何申请 Let's Encrypt 证书
+# 取消注释并替换 email 后 apply 这个资源
+#
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: letsencrypt-prod
+# spec:
+#   acme:
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     email: YOUR_EMAIL@example.com   # ← 替换为你的邮箱
+#     privateKeySecretRef:
+#       name: letsencrypt-prod-key
+#     solvers:
+#       - http01:
+#           ingress:
+#             class: nginx

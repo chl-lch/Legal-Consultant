@@ -1,0 +1,24 @@
+# PVC：为 backend 申请持久化存储
+#
+# backend 有两类数据需要持久化（都挂载到 /app/data）：
+#   1. /app/data/uploads    → 用户上传的 PDF/HTML 文件
+#   2. /app/data/indexes    → FAISS 向量索引 + BM25 索引
+#
+# 重要限制：
+#   accessModes: ReadWriteOnce 意味着同一时刻只能一个 Node 挂载这个磁盘
+#   因此 backend Deployment 的 replicas 只能设为 1
+#   要支持多副本，需要把文件存储迁移到 S3/MinIO（未来扩展点）
+#
+# 部署命令：kubectl apply -f k8s/backend/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-data-pvc
+  namespace: lexicounsel
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # storageClassName: gp3  # 根据你的云平台取消注释并修改

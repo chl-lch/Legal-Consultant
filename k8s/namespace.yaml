@@ -1,0 +1,13 @@
+# Namespace：把 LexiCounsel 的所有资源隔离在自己的命名空间里
+# 好处：
+#   - 不同项目互不干扰
+#   - 可以对整个命名空间做权限控制、资源配额
+#   - kubectl get all -n lexicounsel 一条命令看全部资源
+#
+# 部署命令：kubectl apply -f k8s/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lexicounsel
+  labels:
+    app.kubernetes.io/name: lexicounsel

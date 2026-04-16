@@ -1,0 +1,21 @@
+# Service：给 backend Pod 一个稳定的内部地址
+#
+# 集群内其他 Pod 通过 http://backend:8000 访问 backend API
+# 完整 DNS 名：backend.lexicounsel.svc.cluster.local
+#
+# 注意：这里用 ClusterIP（仅集群内可达）
+# 外部访问通过 Ingress 路由过来，不直接暴露 backend
+#
+# 部署命令：kubectl apply -f k8s/backend/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: lexicounsel
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP

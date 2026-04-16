@@ -1,0 +1,40 @@
+# ── 系统文件 ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── 环境变量（包含真实密码/密钥，绝对不能提交）────────
+.env
+.env.local
+.env.production
+.env*.local
+
+# ── Python ────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/.venv/
+backend/.coverage
+backend/.hypothesis/
+backend/lexicounsel_backend.egg-info/
+
+# ── Node / Frontend ───────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# ── 数据目录（运行时生成，不入库）────────────────────
+data/uploads/*
+!data/uploads/.gitkeep
+data/indexes/*
+!data/indexes/.gitkeep
+
+# ── k8s Secret 文件（填入真实凭据后不可提交）─────────
+# 模板文件（占位符版本）已入库，填写真实值后请用以下命名：
+# k8s/postgres/secret.local.yaml
+# k8s/backend/secret.local.yaml
+k8s/**/secret.local.yaml
+

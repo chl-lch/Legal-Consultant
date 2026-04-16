@@ -1,0 +1,44 @@
+# ConfigMap：存储非敏感配置（明文，可以提交到 git）
+#
+# 概念：
+#   ConfigMap 和 Secret 的区别：
+#     ConfigMap  → 非敏感配置（端口、路径、功能开关等）
+#     Secret     → 敏感数据（密码、API Key、证书等）
+#
+#   两者都可以通过两种方式注入 Pod：
+#     1. envFrom（注入为环境变量，这里用的方式）
+#     2. volumeMount（挂载为文件，适合配置文件）
+#
+# 部署前必须修改：
+#   CORS_ORIGINS: 改为你的真实域名，如 "https://lexicounsel.yourdomain.com"
+#
+# 部署命令：kubectl apply -f k8s/backend/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: lexicounsel
+data:
+  APP_NAME: "LexiCounsel API"
+  APP_ENV: "production"
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "8000"
+  API_PREFIX: "/api/v1"
+  LOG_LEVEL: "INFO"
+  UPLOAD_DIR: "/app/data/uploads"
+  FAISS_INDEX_PATH: "/app/data/indexes/faiss"
+  BM25_INDEX_PATH: "/app/data/indexes/bm25_index.json"
+  OPENAI_MODEL: "gpt-4o-mini"
+  OPENAI_EMBEDDING_MODEL: "text-embedding-3-large"
+  OPENAI_BASE_URL: ""
+  CORS_ORIGINS: "https://YOUR_DOMAIN.com"   # ← 改成你的真实域名
+  RRF_K: "60"
+  DEFAULT_TOP_K: "6"
+  CHUNK_SIZE: "800"
+  CHUNK_OVERLAP: "150"
+  EVALUATION_MIN_SCORE: "7"
+  MAX_REFINEMENT_ATTEMPTS: "1"
+  REQUEST_TIMEOUT_SECONDS: "90"
+  MAX_UPLOAD_SIZE_MB: "50"
+  LANGCHAIN_TRACING_V2: "false"
+  LANGCHAIN_PROJECT: "LexiCounsel"

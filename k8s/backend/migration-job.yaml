@@ -1,0 +1,51 @@
+# Job：运行一次性任务（数据库迁移）
+#
+# 概念：
+#   Job 保证指定的任务被成功执行一次（或 N 次），完成后 Pod 退出
+#   适合数据库 migration、数据初始化等场景
+#
+#   为什么从 Dockerfile CMD 里分离出来？
+#     原始 Dockerfile 在启动时运行 alembic upgrade head
+#     如果你有 2 个 backend 副本同时启动，两个 migration 会并发执行 → 可能冲突
+#     用 Job 可以保证 migration 在 Deployment 启动前只跑一次
+#
+#   restartPolicy:
+#     OnFailure  → 任务失败则重试（直到达到 backoffLimit）
+#     Never      → 失败不重试，看日志排查
+#
+# 使用流程：
+#   1. 每次有新的 migration 时，先 apply 这个 Job
+#   2. 等 Job 成功：kubectl wait --for=condition=complete job/backend-migration -n lexicounsel
+#   3. 再 apply Deployment
+#
+# 注意：每次 apply 前需要先删除旧 Job（Job 名字不能重复）
+#   kubectl delete job backend-migration -n lexicounsel --ignore-not-found
+#
+# 部署命令：kubectl apply -f k8s/backend/migration-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migration
+  namespace: lexicounsel
+spec:
+  backoffLimit: 3          # 最多重试 3 次
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migration
+          image: YOUR_REGISTRY/lexicounsel-backend:latest   # ← 替换为你的镜像地址
+          command: ["alembic", "upgrade", "head"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

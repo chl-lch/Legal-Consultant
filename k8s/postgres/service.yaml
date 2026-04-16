@@ -1,0 +1,27 @@
+# Service：给 Pod 一个稳定的内部 DNS 名
+#
+# 概念：
+#   Pod 重建后 IP 会变，Service 提供固定入口
+#   集群内其他 Pod 通过 http://postgres:5432 访问数据库
+#   完整 DNS 名：postgres.lexicounsel.svc.cluster.local
+#
+#   Service 类型：
+#     ClusterIP     - 只在集群内部可达（数据库用这个，不对外暴露）
+#     NodePort      - 在每个 Node 上开一个端口（调试用）
+#     LoadBalancer  - 云平台分配公网 IP（Web 服务用，但这里数据库不需要）
+#
+#   数据库绝对不能用 LoadBalancer 或 NodePort，只用 ClusterIP
+#
+# 部署命令：kubectl apply -f k8s/postgres/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: lexicounsel
+spec:
+  selector:
+    app: postgres       # 匹配带有 app=postgres 标签的 Pod
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP       # 仅集群内可达，不对外暴露

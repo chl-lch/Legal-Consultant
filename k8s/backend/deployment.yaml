@@ -1,0 +1,100 @@
+# Deployment：管理 backend Pod 的副本、更新策略
+#
+# 概念：
+#   Deployment 是最常用的工作负载资源，适合无状态应用
+#   它管理一个 ReplicaSet，ReplicaSet 确保指定数量的 Pod 始终运行
+#
+#   当你修改镜像版本：
+#     Deployment 会逐步用新 Pod 替换旧 Pod（滚动更新）
+#     strategy.rollingUpdate 控制速度：
+#       maxUnavailable: 0  → 更新期间不允许任何 Pod 不可用（零停机）
+#       maxSurge: 1        → 更新期间最多额外启动 1 个 Pod
+#
+#   replicas: 1 的限制：
+#     因为 PVC 是 ReadWriteOnce，只能一个 Node 挂载
+#     FAISS 索引存在本地文件，多副本会各自维护不同版本的索引
+#     要扩副本需要先把存储迁移到 S3
+#
+#   securityContext（安全加固）：
+#     runAsNonRoot: true  → 拒绝以 root 运行（容器安全最佳实践）
+#     runAsUser: 1000     → 以 UID 1000 运行（对应 Dockerfile 里创建的 appuser）
+#     fsGroup: 1000       → 挂载的 PVC 文件归 GID 1000 所有
+#
+#   envFrom:
+#     把整个 ConfigMap 和 Secret 里的所有 key-value 注入为环境变量
+#     比逐个写 env.valueFrom 更简洁
+#
+# 使用前必须替换：
+#   YOUR_REGISTRY/lexicounsel-backend:latest → 你实际的镜像地址
+#   例如：
+#     Docker Hub:   username/lexicounsel-backend:v1.0.0
+#     AWS ECR:      123456789.dkr.ecr.ap-east-1.amazonaws.com/lexicounsel-backend:latest
+#     GitHub GHCR:  ghcr.io/username/lexicounsel-backend:latest
+#
+# 部署命令：kubectl apply -f k8s/backend/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: lexicounsel
+  labels:
+    app: backend
+spec:
+  replicas: 1   # PVC ReadWriteOnce 限制，暂时只能 1 副本
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   # 零停机更新
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: backend
+          image: YOUR_REGISTRY/lexicounsel-backend:latest   # ← 替换为你的镜像地址
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend-config     # 注入所有非敏感配置
+            - secretRef:
+                name: backend-secret     # 注入所有敏感配置
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data       # 上传文件 + 索引文件都在这里
+          readinessProbe:
+            # 调用我们修复过的 /health/ready（会真正检查 DB 连通性）
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: 20      # 等待 alembic 跑完（现在是 Job 了，可以缩短）
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"             # 留给 FAISS 和 LLM 调用足够内存
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: backend-data-pvc

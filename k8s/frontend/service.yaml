@@ -1,0 +1,26 @@
+# Service：给 frontend Pod 一个内部地址
+#
+# 外部流量路径：
+#   用户浏览器
+#     → Ingress Controller（监听公网 80/443）
+#       → frontend Service（ClusterIP，端口 80）
+#         → frontend Pod（nginx，端口 80）
+#
+#   /api/ 请求：
+#     → Ingress Controller
+#       → backend Service（ClusterIP，端口 8000）
+#         → backend Pod（FastAPI，端口 8000）
+#
+# 部署命令：kubectl apply -f k8s/frontend/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: lexicounsel
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP

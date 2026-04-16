@@ -1,0 +1,261 @@
+:root {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: #111111;
+  background:
+    radial-gradient(circle at top left, rgba(210, 176, 122, 0.3), transparent 30%),
+    linear-gradient(180deg, #f4ead9 0%, #efe2cf 45%, #eadbc5 100%);
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.9rem 1.2rem;
+  background: linear-gradient(135deg, #15314b, #265d7d);
+  color: white;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(21, 49, 75, 0.2);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.app-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  padding: 2rem;
+  border-radius: 32px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 248, 239, 0.5)),
+    #ffffff;
+  border: 1px solid rgba(21, 49, 75, 0.08);
+  box-shadow: 0 24px 60px rgba(68, 45, 18, 0.12);
+}
+
+.hero h1,
+.panel h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  letter-spacing: -0.03em;
+}
+
+.hero h1 {
+  font-size: clamp(2.5rem, 5vw, 4.6rem);
+  max-width: 11ch;
+}
+
+.hero-copy {
+  max-width: 70ch;
+  color: rgba(17, 17, 17, 0.72);
+}
+
+.hero-stats {
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-stats div,
+.metric-card,
+.answer-card,
+.retrieval-card {
+  padding: 1.1rem 1.2rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(21, 49, 75, 0.08);
+}
+
+.hero-stats span,
+.metric-card span,
+.eyebrow {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  color: #6f6457;
+}
+
+.hero-stats strong,
+.metric-card strong {
+  font-size: 1.2rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.panel {
+  padding: 1.5rem;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(21, 49, 75, 0.08);
+  box-shadow: 0 16px 50px rgba(68, 45, 18, 0.08);
+}
+
+.panel-heading {
+  margin-bottom: 1rem;
+}
+
+.split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.table-shell {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(21, 49, 75, 0.08);
+}
+
+.status-chip {
+  display: inline-flex;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  background: rgba(38, 93, 125, 0.08);
+}
+
+.status-chip.ready {
+  background: rgba(30, 112, 66, 0.14);
+}
+
+.status-chip.processing {
+  background: rgba(180, 120, 12, 0.18);
+}
+
+.status-chip.failed {
+  background: rgba(163, 33, 33, 0.18);
+}
+
+.consultation-panel {
+  align-self: start;
+}
+
+.metric-row,
+.retrieval-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.metric-row {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.retrieval-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.retrieval-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.response-stack {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.truncate {
+  max-width: 32ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted,
+.empty-state {
+  color: rgba(17, 17, 17, 0.6);
+}
+
+.error-banner {
+  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  background: rgba(163, 33, 33, 0.12);
+  color: #7b1f1f;
+}
+
+.error-inline {
+  margin: 1rem 0 0;
+  color: #7b1f1f;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .dashboard-grid,
+  .split-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell {
+    padding: 1rem;
+  }
+
+  .hero {
+    padding: 1.5rem;
+  }
+}

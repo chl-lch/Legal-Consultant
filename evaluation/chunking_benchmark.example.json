@@ -1,0 +1,47 @@
+{
+  "documents": [
+    {
+      "document_id": "corp-act",
+      "title": "Corporations Act Sample",
+      "sections": [
+        {
+          "section_id": "corp-1",
+          "text": "Section 180 imposes a duty of care and diligence on directors and officers. Directors must exercise their powers with the degree of care and diligence that a reasonable person would exercise."
+        },
+        {
+          "section_id": "corp-2",
+          "text": "Section 181 requires directors and officers to act in good faith in the best interests of the corporation and for a proper purpose."
+        }
+      ]
+    },
+    {
+      "document_id": "supplier-agreement",
+      "title": "Supplier Agreement Sample",
+      "sections": [
+        {
+          "section_id": "sup-1",
+          "text": "The supplier indemnifies the customer against direct losses arising from intellectual property infringement claims, except to the extent caused by customer modifications."
+        },
+        {
+          "section_id": "sup-2",
+          "text": "Either party may terminate this agreement for material breach if the breach is not remedied within 30 days after written notice."
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "query": "What does section 180 require from directors?",
+      "expected_snippets": ["duty of care and diligence", "reasonable person would exercise"]
+    },
+    {
+      "query": "Find the termination clause notice period.",
+      "expected_snippets": ["not remedied within 30 days", "terminate this agreement for material breach"]
+    },
+    {
+      "query": "Which clause covers indemnity for IP infringement?",
+      "expected_snippets": ["indemnifies the customer", "intellectual property infringement claims"]
+    }
+  ]
+}
+

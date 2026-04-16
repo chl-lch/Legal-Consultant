@@ -1,0 +1,61 @@
+# Deployment：管理 frontend (nginx) Pod
+#
+# frontend 是无状态的（静态文件打包进镜像），可以放心多副本
+# replicas: 2 → 两个副本，一个挂了另一个继续服务
+#
+# 注意：frontend 镜像已经把 React 构建产物和 nginx 打包在一起
+# nginx 配置在 infra/nginx/default.conf，负责：
+#   - 提供静态文件（React SPA）
+#   - /api/ 路由在 Ingress 层已经处理，nginx 配置里的 proxy_pass 在 k8s 里不会被触发
+#
+# 使用前必须替换：
+#   YOUR_REGISTRY/lexicounsel-frontend:latest → 你实际的镜像地址
+#
+# 部署命令：kubectl apply -f k8s/frontend/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: lexicounsel
+  labels:
+    app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: YOUR_REGISTRY/lexicounsel-frontend:latest   # ← 替换为你的镜像地址
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
