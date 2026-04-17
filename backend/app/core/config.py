@@ -34,6 +34,24 @@ class Settings(BaseSettings):
     max_refinement_attempts: int = 1
     cors_origins: str = "http://localhost:3000"
     request_timeout_seconds: int = 90
+    jwt_secret_key: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""           # recurring price ID from Stripe dashboard
+    stripe_price_amount: int = 2900     # in cents (e.g. 2900 = $29.00)
+    stripe_price_currency: str = "usd"
+    stripe_annual_price_id: str = ""        # annual recurring price ID (optional)
+    stripe_annual_price_amount: int = 29000 # in cents (e.g. 29000 = $290/year)
+    app_base_url: str = "http://localhost:3000"
+    # SMTP
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@lexicounsel.io"
 
     @computed_field
     @property

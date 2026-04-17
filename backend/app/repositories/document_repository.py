@@ -19,6 +19,7 @@ class DocumentRepository:
         source_uri: str | None,
         mime_type: str | None,
         metadata_json: dict,
+        user_id: uuid.UUID | None = None,
     ) -> Document:
         document = Document(
             title=title,
@@ -27,6 +28,7 @@ class DocumentRepository:
             mime_type=mime_type,
             metadata_json=metadata_json,
             status=DocumentStatus.processing,
+            user_id=user_id,
         )
         self.session.add(document)
         await self.session.flush()
@@ -55,13 +57,33 @@ class DocumentRepository:
             document.metadata_json = {**document.metadata_json, **metadata_json}
         await self.session.flush()
 
-    async def list_documents(self) -> list[Document]:
-        result = await self.session.execute(select(Document).order_by(Document.created_at.desc()))
+    async def list_documents(self, user_id: uuid.UUID | None = None) -> list[Document]:
+        query = select(Document).order_by(Document.created_at.desc())
+        if user_id is not None:
+            query = query.where(Document.user_id == user_id)
+        result = await self.session.execute(query)
         return list(result.scalars().unique().all())
 
     async def get_document(self, document_id: uuid.UUID) -> Document | None:
         result = await self.session.execute(select(Document).where(Document.id == document_id))
         return result.scalar_one_or_none()
+
+    async def delete_document(self, document: Document) -> None:
+        await self.session.delete(document)
+        await self.session.flush()
+
+    async def get_chunks_by_document(self, document_id: uuid.UUID) -> list[Chunk]:
+        result = await self.session.execute(
+            select(Chunk)
+            .where(Chunk.document_id == document_id)
+            .order_by(Chunk.chunk_index)
+        )
+        return list(result.scalars().all())
+
+    async def clear_chunks(self, document_id: uuid.UUID) -> None:
+        from sqlalchemy import delete as sa_delete
+        await self.session.execute(sa_delete(Chunk).where(Chunk.document_id == document_id))
+        await self.session.flush()
 
     async def get_all_chunks(self) -> list[Chunk]:
         result = await self.session.execute(

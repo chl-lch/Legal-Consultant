@@ -12,6 +12,20 @@ def has_llm_credentials() -> bool:
     return bool(settings.openai_api_key)
 
 
+def get_streaming_chat_llm(temperature: float = 0.0) -> ChatOpenAI:
+    """Fresh (non-cached) LLM with streaming=True for SSE endpoints."""
+    if not settings.openai_api_key:
+        raise RuntimeError("OPENAI_API_KEY is required for LLM workflows.")
+    return ChatOpenAI(
+        model=settings.openai_model,
+        temperature=temperature,
+        streaming=True,
+        api_key=settings.openai_api_key,
+        base_url=settings.openai_base_url or None,
+        timeout=settings.request_timeout_seconds,
+    )
+
+
 @lru_cache
 def get_chat_llm(temperature: float = 0.0) -> ChatOpenAI:
     if not settings.openai_api_key:

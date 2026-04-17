@@ -1,5 +1,6 @@
 import json
 import logging
+import uuid
 from pathlib import Path
 
 from fastapi import UploadFile
@@ -30,6 +31,7 @@ class IngestionService:
         file: UploadFile,
         title: str | None = None,
         metadata_json: dict | None = None,
+        user_id: uuid.UUID | None = None,
     ):
         suffix = Path(file.filename or "document").suffix.lower()
         upload_dir = Path(settings.upload_dir)
@@ -49,6 +51,7 @@ class IngestionService:
                 source_uri=str(file_path),
                 mime_type=file.content_type,
                 metadata_json=metadata_json or {},
+                user_id=user_id,
             )
             if suffix == ".pdf":
                 payload = load_pdf(str(file_path), title=title, metadata_json=metadata_json)
@@ -81,7 +84,7 @@ class IngestionService:
                 logger.warning("failed_to_cleanup_upload", extra={"path": str(file_path)})
             raise exc
 
-    async def ingest_url(self, request: UrlIngestionRequest):
+    async def ingest_url(self, request: UrlIngestionRequest, user_id: uuid.UUID | None = None):
         try:
             payload = await load_from_url(str(request.url), title=request.title, metadata_json=request.metadata_json)
             document = await self.repository.create_document(
@@ -90,6 +93,7 @@ class IngestionService:
                 source_uri=str(request.url),
                 mime_type=payload.mime_type,
                 metadata_json=request.metadata_json,
+                user_id=user_id,
             )
             chunks = build_chunks(payload)
             db_chunks = await self.repository.add_chunks(document.id, chunks)
@@ -110,6 +114,59 @@ class IngestionService:
             await self.session.rollback()
             logger.exception("url_ingestion_failed", extra={"url": str(request.url)})
             raise
+
+    async def retry_document(self, document) -> object:
+        """Re-process a failed (or stuck) document from its original source."""
+        from pathlib import Path as _Path
+        from app.models.document import DocumentStatus as _DS
+
+        await self.repository.clear_chunks(document.id)
+        await self.repository.set_status(document, _DS.processing)
+        await self.session.commit()
+
+        try:
+            if document.source_type == SourceType.url:
+                payload = await load_from_url(
+                    document.source_uri,
+                    title=document.title,
+                    metadata_json=document.metadata_json,
+                )
+            elif document.source_type == SourceType.upload:
+                file_path = _Path(document.source_uri)
+                if not file_path.exists():
+                    raise ValueError("Original file no longer on disk. Please re-upload.")
+                suffix = file_path.suffix.lower()
+                if suffix == ".pdf":
+                    payload = load_pdf(str(file_path), title=document.title, metadata_json=document.metadata_json)
+                elif suffix in {".html", ".htm"}:
+                    payload = load_html_bytes(
+                        file_path.read_bytes(),
+                        source_uri=str(file_path),
+                        title=document.title,
+                        metadata_json=document.metadata_json,
+                    )
+                else:
+                    raise ValueError("Unsupported file type.")
+            else:
+                raise ValueError("Unknown document source type.")
+
+            chunks = build_chunks(payload)
+            db_chunks = await self.repository.add_chunks(document.id, chunks)
+            await self.repository.set_status(
+                document,
+                _DS.ready,
+                {"chunk_count": len(db_chunks), "retried": True},
+            )
+            await self.session.commit()
+            await self._refresh_indexes()
+            await self.session.refresh(document)
+            return document
+        except Exception as exc:
+            await self.session.rollback()
+            await self.repository.set_status(document, _DS.failed)
+            await self.session.commit()
+            logger.exception("retry_ingestion_failed", extra={"document_id": str(document.id)})
+            raise exc
 
     async def _refresh_indexes(self) -> None:
         await self.retriever.rebuild_from_repository(self.repository)
